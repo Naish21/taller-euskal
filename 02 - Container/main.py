@@ -13,18 +13,18 @@ import psycopg
 def limpia_tabla_acciones(datf: pd.DataFrame) -> pd.DataFrame:
     """Limpia el dataframe de la tabla de acciones del Ibex35 para que los datos sean coherentes"""
     _datf = deepcopy(datf)
-    for col in ('Último', 'Máx.', 'Mín.'):
+    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']
+    for col in ('VALOR', 'MAX', 'MIN'):
         _datf[col] = _datf[col] / 1000
 
-    for col in ('Var. %', 'Var.', 'Ac. % año'):
+    for col in ('VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL'):
         _datf[col] = _datf[col] / 100
 
-    _datf['Vol.'] = _datf['Vol.'].str.replace('.', '', regex=False)
-    _datf['Vol.'] = pd.to_numeric(_datf['Vol.'])
+    _datf['VOL'] = _datf['VOL'].str.replace('.', '', regex=False)
+    _datf['VOL'] = pd.to_numeric(_datf['VOL'])
 
-    _datf['Capit.'] = _datf['Capit.'] * 1000
-    _datf['Capit.'] = _datf['Capit.'].astype(int)
-    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']
+    _datf['CAPIT'] = _datf['CAPIT'] * 1000
+    _datf['CAPIT'] = _datf['CAPIT'].astype(int)
     _datf['FECHA'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return _datf[['ACCION', 'FECHA', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']]
 
@@ -79,8 +79,12 @@ if __name__ == "__main__":
     # Coger los datos de la web:
     DEFAULT_URL = "https://www.expansion.com/mercados/cotizaciones/indices/ibex35_I.IB.html"
     url = os.environ.get('URL', DEFAULT_URL)
-    web = pd.read_html(url)
-    ibex35_tmp = web[6].iloc[:,:-1]
+    web = pd.read_html(url, encoding='ISO-8859-1')
+    for table in web:
+        if 'Valor' in table.columns and 'Var.' in table.columns:
+            tabla_cotizaciones = table
+            break
+    ibex35_tmp = tabla_cotizaciones.iloc[:,:-1]
     ibex35 = limpia_tabla_acciones(ibex35_tmp)
 
     # Insertar los datos en la BBDD:
