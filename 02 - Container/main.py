@@ -1,6 +1,6 @@
 """Recoge la tabla de valor de las acciones de la web de Expansion y sube los datos a un postgres"""
 
-__version__ = "0.01"
+__version__ = "0.02"
 
 import os
 from copy import deepcopy
@@ -13,11 +13,35 @@ import psycopg
 def limpia_tabla_acciones(datf: pd.DataFrame) -> pd.DataFrame:
     """Limpia el dataframe de la tabla de acciones del Ibex35 para que los datos sean coherentes"""
     _datf = deepcopy(datf)
-    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL',
-                     'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA', '_']
-    _datf['FECHA'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    return _datf[['ACCION', 'FECHA', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL',
-                  'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']]
+    _datf.columns = [
+        "ACCION",
+        "VALOR",
+        "VARIACION",
+        "VAR_VALOR",
+        "ACUMULADO_ANUAL",
+        "MAX",
+        "MIN",
+        "VOL",
+        "CAPIT",
+        "HORA",
+        "_",
+    ]
+    _datf["FECHA"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return _datf[
+        [
+            "ACCION",
+            "FECHA",
+            "VALOR",
+            "VARIACION",
+            "VAR_VALOR",
+            "ACUMULADO_ANUAL",
+            "MAX",
+            "MIN",
+            "VOL",
+            "CAPIT",
+            "HORA",
+        ]
+    ]
 
 
 def test_postgres_connection(conn_str: str) -> list[tuple]:
@@ -60,7 +84,7 @@ def insert_data(conn_str: str, table_name: str, data: list[dict]):
     with psycopg.connect(conninfo=conn_str) as conn:
         with conn.cursor() as cursor:
             for _data_to_insert in data:
-                columns = ', '.join(_data_to_insert.keys())
+                columns = ", ".join(_data_to_insert.keys())
                 values = tuple(_data_to_insert.values())
                 cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES {values}")
         conn.commit()
@@ -68,20 +92,22 @@ def insert_data(conn_str: str, table_name: str, data: list[dict]):
 
 if __name__ == "__main__":
     # Coger los datos de la web:
-    DEFAULT_URL = "https://www.expansion.com/mercados/cotizaciones/indices/ibex35_I.IB.html"
-    url = os.environ.get('URL', DEFAULT_URL)
-    web = pd.read_html(url, encoding='ISO-8859-1')
+    DEFAULT_URL = (
+        "https://www.expansion.com/mercados/cotizaciones/indices/ibex35_I.IB.html"
+    )
+    url = os.environ.get("URL", DEFAULT_URL)
+    web = pd.read_html(url, encoding='ISO-8859-1', decimal=',', thousands='.')
     for table in web:
-        if 'Valor' in table.columns and 'Var.' in table.columns:
+        if "Valor" in table.columns and "Var." in table.columns:
             tabla_cotizaciones = table
             break
     ibex35 = limpia_tabla_acciones(tabla_cotizaciones)
 
     # Insertar los datos en la BBDD:
-    connection_string = os.environ.get('CONNECTION_STRING')
+    connection_string = os.environ.get("CONNECTION_STRING")
     try:
         create_table(conn_str=connection_string)
     except psycopg.errors.DuplicateTable:
         pass
-    data_to_insert = ibex35.to_dict('records')
-    insert_data(conn_str=connection_string, table_name='IBEX35', data=data_to_insert)
+    data_to_insert = ibex35.to_dict("records")
+    insert_data(conn_str=connection_string, table_name="IBEX35", data=data_to_insert)
