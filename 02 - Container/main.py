@@ -3,8 +3,8 @@
 __version__ = "0.01"
 
 import os
-from datetime import datetime
 from copy import deepcopy
+from datetime import datetime
 
 import pandas as pd
 import psycopg
@@ -13,9 +13,11 @@ import psycopg
 def limpia_tabla_acciones(datf: pd.DataFrame) -> pd.DataFrame:
     """Limpia el dataframe de la tabla de acciones del Ibex35 para que los datos sean coherentes"""
     _datf = deepcopy(datf)
-    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA', '_']
+    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL',
+                     'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA', '_']
     _datf['FECHA'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    return _datf[['ACCION', 'FECHA', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']]
+    return _datf[['ACCION', 'FECHA', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL',
+                  'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']]
 
 
 def test_postgres_connection(conn_str: str) -> list[tuple]:
@@ -53,7 +55,7 @@ def create_table(conn_str: str):
         conn.commit()
 
 
-def insert_data(conn_str: str, table_name:str, data: list[dict]):
+def insert_data(conn_str: str, table_name: str, data: list[dict]):
     """Insertamos los datos en la base de datos"""
     with psycopg.connect(conninfo=conn_str) as conn:
         with conn.cursor() as cursor:
