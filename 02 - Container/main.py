@@ -13,18 +13,7 @@ import psycopg
 def limpia_tabla_acciones(datf: pd.DataFrame) -> pd.DataFrame:
     """Limpia el dataframe de la tabla de acciones del Ibex35 para que los datos sean coherentes"""
     _datf = deepcopy(datf)
-    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']
-    for col in ('VALOR', 'MAX', 'MIN'):
-        _datf[col] = _datf[col] / 1000
-
-    for col in ('VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL'):
-        _datf[col] = _datf[col] / 100
-
-    _datf['VOL'] = _datf['VOL'].str.replace('.', '', regex=False)
-    _datf['VOL'] = pd.to_numeric(_datf['VOL'])
-
-    _datf['CAPIT'] = _datf['CAPIT'] * 1000
-    _datf['CAPIT'] = _datf['CAPIT'].astype(int)
+    _datf.columns = ['ACCION', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA', '_']
     _datf['FECHA'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return _datf[['ACCION', 'FECHA', 'VALOR', 'VARIACION', 'VAR_VALOR', 'ACUMULADO_ANUAL', 'MAX', 'MIN', 'VOL', 'CAPIT', 'HORA']]
 
@@ -84,8 +73,7 @@ if __name__ == "__main__":
         if 'Valor' in table.columns and 'Var.' in table.columns:
             tabla_cotizaciones = table
             break
-    ibex35_tmp = tabla_cotizaciones.iloc[:,:-1]
-    ibex35 = limpia_tabla_acciones(ibex35_tmp)
+    ibex35 = limpia_tabla_acciones(tabla_cotizaciones)
 
     # Insertar los datos en la BBDD:
     connection_string = os.environ.get('CONNECTION_STRING')
