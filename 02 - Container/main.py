@@ -1,8 +1,9 @@
 """Recoge la tabla de valor de las acciones de la web de Expansion y sube los datos a un postgres"""
 
-__version__ = "0.02"
+__version__ = "0.03"
 
 import os
+import sys
 from copy import deepcopy
 from datetime import datetime
 
@@ -23,10 +24,10 @@ def limpia_tabla_acciones(datf: pd.DataFrame) -> pd.DataFrame:
         "MIN",
         "VOL",
         "CAPIT",
-        "HORA",
+        "FECHA",
         "_",
     ]
-    _datf["FECHA"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _datf['FECHA'] = datetime.now().strftime('%Y-%m-%d') + ' ' + _datf['FECHA']
     return _datf[
         [
             "ACCION",
@@ -39,7 +40,6 @@ def limpia_tabla_acciones(datf: pd.DataFrame) -> pd.DataFrame:
             "MIN",
             "VOL",
             "CAPIT",
-            "HORA",
         ]
     ]
 
@@ -70,7 +70,6 @@ def create_table(conn_str: str):
             ,min numeric NOT NULL
             ,vol numeric NOT NULL
             ,capit numeric NOT NULL
-            ,hora varchar NOT NULL
         );"""
 
     with psycopg.connect(conninfo=conn_str) as conn:
@@ -97,10 +96,13 @@ if __name__ == "__main__":
     )
     url = os.environ.get("URL", DEFAULT_URL)
     web = pd.read_html(url, encoding='ISO-8859-1', decimal=',', thousands='.')
+    tabla_cotizaciones = None
     for table in web:
         if "Valor" in table.columns and "Var." in table.columns:
             tabla_cotizaciones = table
             break
+    if tabla_cotizaciones is None:
+        sys.exit(1)
     ibex35 = limpia_tabla_acciones(tabla_cotizaciones)
 
     # Insertar los datos en la BBDD:
