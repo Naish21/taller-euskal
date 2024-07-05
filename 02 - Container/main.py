@@ -1,6 +1,6 @@
 """Recoge la tabla de valor de las acciones de la web de Expansion y sube los datos a un postgres"""
 
-__version__ = "0.03"
+__version__ = "0.04"
 
 import os
 import sys
@@ -70,6 +70,7 @@ def create_table(conn_str: str):
             ,min numeric NOT NULL
             ,vol numeric NOT NULL
             ,capit numeric NOT NULL
+            --,CONSTRAINT ibex35_unique UNIQUE (accion, fecha)
         );"""
 
     with psycopg.connect(conninfo=conn_str) as conn:
@@ -111,5 +112,10 @@ if __name__ == "__main__":
         create_table(conn_str=connection_string)
     except psycopg.errors.DuplicateTable:
         pass
+
     data_to_insert = ibex35.to_dict("records")
-    insert_data(conn_str=connection_string, table_name="IBEX35", data=data_to_insert)
+    try:
+        insert_data(conn_str=connection_string, table_name="IBEX35", data=data_to_insert)
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} -> Updated!")
+    except psycopg.errors.UniqueViolation:
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} -> Not updated!")
